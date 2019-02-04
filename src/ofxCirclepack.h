@@ -3,6 +3,8 @@
 #include "ofMain.h"
 #include <complex>
 
+#define tolerance 1.0001
+
 struct circle {
     float x, y, r;
 };
@@ -24,8 +26,6 @@ private:
     map<int, float> radii;
     map<int, complex<float>> placements;
     map<int, circle> packing;
-    
-    const float tolerance = 1.0001;
     
 };
 
