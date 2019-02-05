@@ -92,6 +92,55 @@ void ofxCirclepack::draw() {
     
 }
 
+void ofxCirclepack::invertPacking(float x, float y) {
+    complex<float> center(x, y);
+    for (auto& x : packing) {
+        complex<float> z(x.second.x, x.second.y);
+        float r = x.second.r;
+        z -= center;
+        complex<float> offset(0, 1);
+        if (abs(z) > 0) {
+            offset = z / abs(z);
+        }
+        complex<float> p = (float)1 / (z - offset * r);
+        complex<float> q = (float)1 / (z + offset * r);
+        z = (p + q) / (float)2;
+        r = abs((p - q) / (float)2);
+        circle c;
+        c.x = z.real();
+        c.y = z.imag();
+        c.r = r;
+        packing[x.first] = c;
+    }
+}
+
+void ofxCirclepack::normalizePacking(int k, int target) {
+    float s = target / packing[k].r;
+    for (auto& x : packing) {
+        x.second.x *= s;
+        x.second.y *= s;
+        x.second.r *= s;
+    }
+}
+
+void ofxCirclepack::invertAround(int k) {
+    complex<float> z(packing[k].x, packing[k].y);
+    float r = packing[k].r;
+    complex<float> q = z;
+    complex<float> g(0.4 * r, 0);
+    float oldrad = 0;
+    float ratio = 2;
+    while (abs(g) > r * (tolerance - 1) || ratio > tolerance) {
+        tuple<float, complex<float>> maxFromGrid = testGrid(k, q, g);
+        float rr = get<0>(maxFromGrid);
+        complex<float> q = get<1>(maxFromGrid);
+        if (oldrad != 0) ratio = rr / oldrad;
+        oldrad = rr;
+        g *= complex<float>(0.53, 0.1);
+    }
+    invertPacking(q.real(), q.imag());
+}
+
 float ofxCirclepack::flower(int center, vector<int> cycle) {
     float sum = 0;
     for (int i = 0; i < cycle.size(); i++) {
@@ -131,3 +180,64 @@ void ofxCirclepack::place(map<int, vector<int>> internal, int center) {
     }
 }
 
+tuple<float, complex<float>> ofxCirclepack::testGrid(int k, complex<float> q, complex<float> g) {
+    float maxRadius = 0;
+    complex<float> maxRadiusCenter;
+    for (int i = -2; i <= 2; i++) {
+        for (int j = -2; j <= 2; j++) {
+            complex<float> center = q  + (float)i * g + (float)j * complex<float>(0, 1) * g;
+            if (abs(center - complex<float>(packing[k].x, packing[k].y)) < packing[k].r) {
+                map<int, circle> newpack = getInvertedPacking(packing, center.real(), center.imag());
+                newpack = getNormalizedPacking(newpack, k);
+                float minrad = 100000;
+                for (auto& x : newpack) {
+                    if (x.second.r < minrad) {
+                        minrad = x.second.r;
+                    }
+                }
+                if (minrad > maxRadius) {
+                    maxRadius = minrad;
+                    maxRadiusCenter = center;
+                }
+            }
+        }
+    }
+    return make_tuple(maxRadius, maxRadiusCenter);
+}
+
+map<int, circle> ofxCirclepack::getInvertedPacking(map<int, circle> pack, float x, float y) {
+    map<int, circle> result;
+    complex<float> center(x, y);
+    for (auto& x : pack) {
+        complex<float> z(x.second.x, x.second.y);
+        float r = x.second.r;
+        z -= center;
+        complex<float> offset(0, 1);
+        if (abs(z) > 0) {
+            offset = z / abs(z);
+        }
+        complex<float> p = (float)1 / (z - offset * r);
+        complex<float> q = (float)1 / (z + offset * r);
+        z = (p + q) / (float)2;
+        r = abs((p - q) / (float)2);
+        circle c;
+        c.x = z.real();
+        c.y = z.imag();
+        c.r = r;
+        result[x.first] = c;
+    }
+    return result;
+}
+
+map<int, circle> ofxCirclepack::getNormalizedPacking(map<int, circle> pack, int k, int target) {
+    map<int, circle> result;
+    float s = target / pack[k].r;
+    for (auto& x : pack) {
+        circle c;
+        c.x = x.second.x * s;
+        c.y = x.second.y * s;
+        c.r = x.second.r * s;
+        result[x.first] = c;
+    }
+    return result;
+}
