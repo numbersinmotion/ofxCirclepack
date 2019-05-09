@@ -7,6 +7,7 @@
 
 struct circle {
     float x, y, r;
+    int key;
 };
 
 class ofxCirclepack {

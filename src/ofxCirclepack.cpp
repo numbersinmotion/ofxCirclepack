@@ -46,6 +46,7 @@ void ofxCirclepack::pack(map<int, vector<int>> internal, map<int, float> externa
         c.x = placements[key].real();
         c.y = placements[key].imag();
         c.r = radii[key];
+        c.key = key;
         
         packing[key] = c;
         
@@ -110,6 +111,7 @@ void ofxCirclepack::invertPacking(float x, float y) {
         c.x = z.real();
         c.y = z.imag();
         c.r = r;
+        c.key = x.second.key;
         packing[x.first] = c;
     }
 }
@@ -224,6 +226,7 @@ map<int, circle> ofxCirclepack::getInvertedPacking(map<int, circle> pack, float 
         c.x = z.real();
         c.y = z.imag();
         c.r = r;
+        c.key = x.second.key;
         result[x.first] = c;
     }
     return result;
@@ -237,6 +240,7 @@ map<int, circle> ofxCirclepack::getNormalizedPacking(map<int, circle> pack, int 
         c.x = x.second.x * s;
         c.y = x.second.y * s;
         c.r = x.second.r * s;
+        c.key = x.second.key;
         result[x.first] = c;
     }
     return result;
